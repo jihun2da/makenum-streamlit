@@ -1,23 +1,23 @@
 # Streamlit
-streamlit==1.31.0
-streamlit-aggrid==1.2.1
+streamlit>=1.31.0
+streamlit-aggrid>=1.2.0
 
 # 웹 프레임워크
-Flask==3.0.0
-Flask-CORS==4.0.0
-Flask-SQLAlchemy==3.1.1
-Werkzeug==3.0.1
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+Flask-SQLAlchemy>=3.1.0
+Werkzeug>=3.0.0
 
 # 데이터베이스
-PyMySQL==1.1.0
-SQLAlchemy==2.0.25
+PyMySQL>=1.1.0
+SQLAlchemy>=2.0.0
 
 # 엑셀 처리
-openpyxl==3.1.2
-pandas==2.1.4
+openpyxl>=3.1.0
+pandas>=2.2.0
 
 # 환경 변수
-python-dotenv==1.0.0
+python-dotenv>=1.0.0
 
 # 데이터 검증
-marshmallow==3.20.1
+marshmallow>=3.20.0
