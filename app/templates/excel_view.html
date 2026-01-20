@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 관리 시스템 - 엑셀 뷰</title>
+    
+    <!-- AG Grid CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/styles/ag-theme-alpine.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .toolbar-left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .column-toggle {
+            position: relative;
+        }
+        
+        .column-toggle-btn {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .column-toggle-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 5px;
+        }
+        
+        .column-toggle-menu.active {
+            display: block;
+        }
+        
+        .column-toggle-item {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .column-toggle-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .column-toggle-item input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .grid-container {
+            height: calc(100vh - 140px);
+            padding: 20px;
+        }
+        
+        .ag-theme-alpine {
+            --ag-header-background-color: #f8f9fa;
+            --ag-header-foreground-color: #2c3e50;
+            --ag-odd-row-background-color: #ffffff;
+            --ag-row-hover-color: #f0f7ff;
+        }
+        
+        /* 상태별 색상 */
+        .status-입고대기 {
+            background-color: #ffffff !important;
+        }
+        
+        .status-입고 {
+            background-color: #fff3cd !important;
+        }
+        
+        .status-미송 {
+            background-color: #d1ecf1 !important;
+        }
+        
+        .status-품절 {
+            background-color: #f8d7da !important;
+        }
+        
+        .status-교환 {
+            background-color: #fff3e0 !important;
+        }
+        
+        .status-환불 {
+            background-color: #fce4ec !important;
+        }
+        
+        .status-택배비 {
+            background-color: #e0e0e0 !important;
+        }
+        
+        .stats-bar {
+            background: white;
+            padding: 10px 20px;
+            display: flex;
+            gap: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 13px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        /* 업로드 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+        }
+        
+        .upload-area:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+        
+        .upload-area.dragover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        /* 로딩 모달 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 400px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .loading-subtext {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: progress-pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes progress-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 주문 관리 시스템</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="showUploadModal()">📤 엑셀 업로드</button>
+            <button class="btn" style="background: #e74c3c; color: white;" onclick="showRollbackModal()">↩️ 업로드 취소</button>
+            <button class="btn btn-primary" onclick="exportToExcel()">📥 엑셀 다운로드</button>
+        </div>
+    </div>
+    
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="column-toggle">
+                <button class="column-toggle-btn" onclick="toggleColumnMenu()">
+                    ⚙️ 컬럼 표시/숨김
+                </button>
+                <div class="column-toggle-menu" id="columnMenu">
+                    <!-- 동적으로 생성 -->
+                </div>
+            </div>
+            <input type="text" class="search-box" id="searchBox" placeholder="검색..." onkeyup="onSearchChange()">
+        </div>
+        <div class="toolbar-right">
+            <select class="search-box" style="width: 150px;" onchange="filterByStatus(this.value)">
+                <option value="">전체 상태</option>
+                <option value="입고대기">입고대기</option>
+                <option value="입고">입고</option>
+                <option value="미송">미송</option>
+                <option value="품절">품절</option>
+                <option value="교환">교환</option>
+                <option value="환불">환불</option>
+                <option value="택배비">택배비</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="grid-container">
+        <div id="myGrid" class="ag-theme-alpine" style="height: 100%; width: 100%;"></div>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="stat-label">📦 총 상품:</span>
+            <span class="stat-value" id="totalCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">📊 총 수량:</span>
+            <span class="stat-value" id="totalQuantity">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">✅ 입고:</span>
+            <span class="stat-value" id="incomingCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">⏳ 미송:</span>
+            <span class="stat-value" id="pendingCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">❌ 품절:</span>
+            <span class="stat-value" id="soldoutCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">🔄 교환:</span>
+            <span class="stat-value" id="exchangeCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">💰 환불:</span>
+            <span class="stat-value" id="refundCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">✔️ 선택:</span>
+            <span class="stat-value" id="selectedCount">0</span>
+        </div>
+    </div>
+    
+    <!-- 업로드 모달 -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <h2>엑셀 파일 업로드</h2>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()" 
+                 ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <p style="font-size: 48px; margin-bottom: 10px;">📁</p>
+                <p style="font-size: 16px; color: #666;">클릭하거나 파일을 드래그하여 업로드</p>
+                <p style="font-size: 12px; color: #999; margin-top: 10px;">지원 형식: .xlsx, .xls</p>
+                <input type="file" id="fileInput" style="display: none;" accept=".xlsx,.xls" onchange="uploadFile(event)">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" onclick="closeUploadModal()" style="background: #95a5a6; color: white;">취소</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 롤백 모달 -->
+    <div id="rollbackModal" class="modal">
+        <div class="modal-content">
+            <h2>업로드 취소</h2>
+            <p>최근 업로드한 데이터를 삭제하시겠습니까?</p>
+            <div id="uploadHistoryList" style="margin: 20px 0; max-height: 300px; overflow-y: auto;">
+                <!-- 동적으로 생성 -->
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" onclick="closeRollbackModal()" style="background: #95a5a6; color: white;">취소</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 로딩 오버레이 -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">엑셀 파일 업로드 중...</div>
+            <div class="loading-subtext">데이터를 처리하고 있습니다. 잠시만 기다려주세요.</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="loading-subtext" style="margin-top: 15px;" id="uploadStatus">파일 읽는 중...</div>
+        </div>
+    </div>
+    
+    <!-- AG Grid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/dist/ag-grid-community.min.js"></script>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let gridApi;
+        let gridColumnApi;
+        
+        // 컬럼 정의 (엑셀과 정확히 동일 - 23개 컬럼)
+        const columnDefs = [
+            { headerName: '알파벳', field: 'manager', width: 80, pinned: 'left', checkboxSelection: true },
+            { headerName: '미등록주문', field: 'barcode', width: 150 },
+            { headerName: '주문일', field: 'order_date', width: 100 },
+            { headerName: '아이디', field: 'user_id', width: 120 },
+            { headerName: '고유번호', field: 'order_no', width: 150, pinned: 'left' },
+            { headerName: '주문자명', field: 'buyer_name', width: 120 },
+            { headerName: '위탁자명', field: 'consignor_name', width: 150 },
+            { headerName: '브랜드', field: 'category', width: 120 },
+            { headerName: '상품명', field: 'product_name', width: 250,
+                cellStyle: params => {
+                    const status = params.data.status;
+                    const colors = {
+                        '입고대기': { background: '#ffffff' },
+                        '입고': { background: '#fff3cd' },
+                        '미송': { background: '#d1ecf1' },
+                        '품절': { background: '#f8d7da' },
+                        '교환': { background: '#fff3e0' },
+                        '환불': { background: '#fce4ec' },
+                        '택배비': { background: '#e0e0e0' }
+                    };
+                    return colors[status] || {};
+                }
+            },
+            { headerName: '색상', field: 'color', width: 100 },
+            { headerName: '사이즈', field: 'size', width: 80 },
+            { headerName: '수량', field: 'quantity', width: 80, type: 'numericColumn' },
+            { headerName: '상가', field: 'options', width: 100 },
+            { headerName: '도매가', field: 'wholesale_price', width: 100 },
+            { headerName: '미송', field: 'supplier', width: 120 },
+            { headerName: '비고', field: 'notes', width: 200 },
+            { headerName: '이름', field: 'recipient_name', width: 120 },
+            { headerName: '전화번호', field: 'phone', width: 120 },
+            { headerName: '주소', field: 'address', width: 250 },
+            { headerName: '아이디', field: 'buyer_user_id', width: 120 },
+            { headerName: '배송메세지', field: 'delivery_msg', width: 200 },
+            { headerName: '코드', field: 'code', width: 80 },
+            { headerName: '상품상태', field: 'status', width: 100,
+                cellStyle: params => {
+                    const status = params.value;
+                    const colors = {
+                        '입고대기': { background: '#ffffff' },
+                        '입고': { background: '#fff3cd' },
+                        '미송': { background: '#d1ecf1' },
+                        '품절': { background: '#f8d7da' },
+                        '교환': { background: '#fff3e0' },
+                        '환불': { background: '#fce4ec' },
+                        '택배비': { background: '#e0e0e0' }
+                    };
+                    return colors[status] || {};
+                }
+            },
+            { headerName: '상태이력', field: 'status_history', width: 200, 
+                cellStyle: { fontSize: '11px', color: '#666' },
+                tooltipField: 'status_history'
+            },
+            { headerName: '변경내용', field: 'change_log', width: 300, 
+                cellStyle: { fontSize: '11px', color: '#666', whiteSpace: 'pre-wrap' },
+                tooltipField: 'change_log',
+                autoHeight: true,
+                wrapText: true
+            }
+        ];
+        
+        // 그리드 옵션
+        const gridOptions = {
+            columnDefs: columnDefs,
+            defaultColDef: {
+                sortable: true,
+                filter: true,
+                resizable: true,
+                editable: false
+            },
+            rowSelection: 'multiple',
+            enableRangeSelection: true,
+            suppressRowClickSelection: true,
+            animateRows: true,
+            pagination: false,
+            onGridReady: onGridReady,
+            onSelectionChanged: onSelectionChanged,
+            onCellValueChanged: onCellValueChanged,
+            getRowStyle: params => {
+                const status = params.data.status;
+                return { background: getStatusColor(status) };
+            }
+        };
+        
+        function getStatusColor(status) {
+            const colors = {
+                '입고대기': '#ffffff',
+                '입고': '#fff3cd',
+                '미송': '#d1ecf1',
+                '품절': '#f8d7da',
+                '교환': '#fff3e0',
+                '환불': '#fce4ec',
+                '택배비': '#e0e0e0'
+            };
+            return colors[status] || '#ffffff';
+        }
+        
+        // 그리드 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            const gridDiv = document.querySelector('#myGrid');
+            gridApi = agGrid.createGrid(gridDiv, gridOptions);
+            
+            // 컬럼 메뉴 생성
+            createColumnMenu();
+            
+            // 데이터 로드
+            loadData();
+        });
+        
+        function onGridReady(params) {
+            gridApi = params.api;
+            gridColumnApi = params.columnApi;
+        }
+        
+        function onSelectionChanged() {
+            const selectedRows = gridApi.getSelectedRows();
+            document.getElementById('selectedCount').textContent = selectedRows.length;
+        }
+        
+        function onCellValueChanged(event) {
+            console.log('셀 값 변경:', event.data);
+            // TODO: API로 업데이트
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch(`${API_BASE}/orders?per_page=10000`);
+                const data = await response.json();
+                
+                // 데이터 변환 (각 상품 항목별로 행 생성)
+                const rowData = [];
+                data.items.forEach(order => {
+                    if (order.items && order.items.length > 0) {
+                        order.items.forEach(item => {
+                            // item.notes에서 모든 정보 파싱
+                            const notes = item.notes || '';
+                            
+                            // 정규식으로 각 필드 추출
+                            const parseField = (fieldName) => {
+                                const pattern = new RegExp(`${fieldName}:\\s*([^,]+)`, 'g');
+                                const match = pattern.exec(notes);
+                                return match ? match[1].trim() : '';
+                            };
+                            
+                            const barcode = parseField('바코드');
+                            const category = parseField('브랜드');
+                            const size = parseField('사이즈');
+                            const options = parseField('상가');
+                            const wholesalePrice = parseField('도매가');
+                            const supplier = parseField('미송');
+                            const noteText = parseField('비고');
+                            const recipientName = parseField('이름');
+                            const phone = parseField('전화번호');
+                            const address = parseField('주소');
+                            const buyerUserId = parseField('구매아이디');
+                            const deliveryMsg = parseField('배송메세지');
+                            const code = parseField('코드');
+                            
+                            rowData.push({
+                                manager: order.manager?.code || '',
+                                barcode: barcode,
+                                order_date: order.order_date,
+                                user_id: order.buyer?.user_id || '',
+                                order_no: order.order_no,
+                                buyer_name: order.buyer?.name || '',
+                                consignor_name: order.consignor?.name || '',
+                                category: category,
+                                product_name: item.product_name || '',
+                                color: item.color || '',
+                                size: size,
+                                quantity: item.quantity || 0,
+                                options: options,
+                                wholesale_price: wholesalePrice,
+                                supplier: supplier,
+                                notes: noteText,
+                                recipient_name: recipientName,
+                                phone: phone || order.buyer?.phone || '',
+                                address: address,
+                                buyer_user_id: buyerUserId || order.buyer?.user_id || '',
+                                delivery_msg: deliveryMsg,
+                                code: code,
+                                status: item.status || order.status || '입고대기',
+                                status_history: item.status_history || item.status || '입고대기',
+                                change_log: item.change_log || ''
+                            });
+                        });
+                    } else {
+                        // 아이템이 없으면 주문만 표시
+                        rowData.push({
+                            manager: order.manager?.code || '',
+                            barcode: '',
+                            order_date: order.order_date,
+                            user_id: order.buyer?.user_id || '',
+                            order_no: order.order_no,
+                            buyer_name: order.buyer?.name || '',
+                            consignor_name: order.consignor?.name || '',
+                            category: '',
+                            product_name: '',
+                            color: '',
+                            size: '',
+                            quantity: order.total_quantity,
+                            options: '',
+                            wholesale_price: '',
+                            supplier: '',
+                            notes: order.notes || '',
+                            recipient_name: '',
+                            phone: order.buyer?.phone || '',
+                            address: '',
+                            buyer_user_id: order.buyer?.user_id || '',
+                            delivery_msg: '',
+                            code: '',
+                            status: order.status || '입고대기'
+                        });
+                    }
+                });
+                
+                gridApi.setGridOption('rowData', rowData);
+                updateStats(rowData);
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+            }
+        }
+        
+        function updateStats(data) {
+            document.getElementById('totalCount').textContent = data.length;
+            
+            // 총 수량 계산
+            const totalQty = data.reduce((sum, r) => sum + (r.quantity || 0), 0);
+            document.getElementById('totalQuantity').textContent = totalQty;
+            
+            // 상태별 개수
+            document.getElementById('incomingCount').textContent = 
+                data.filter(r => r.status === '입고').length;
+            document.getElementById('pendingCount').textContent = 
+                data.filter(r => r.status === '미송').length;
+            document.getElementById('soldoutCount').textContent = 
+                data.filter(r => r.status === '품절').length;
+            document.getElementById('exchangeCount').textContent = 
+                data.filter(r => r.status === '교환').length;
+            document.getElementById('refundCount').textContent = 
+                data.filter(r => r.status === '환불').length;
+        }
+        
+        function createColumnMenu() {
+            const menu = document.getElementById('columnMenu');
+            columnDefs.forEach((col, index) => {
+                const item = document.createElement('div');
+                item.className = 'column-toggle-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="col-${index}" checked onchange="toggleColumn('${col.field}', this.checked)">
+                    <label for="col-${index}" style="cursor: pointer;">${col.headerName}</label>
+                `;
+                menu.appendChild(item);
+            });
+        }
+        
+        function toggleColumnMenu() {
+            const menu = document.getElementById('columnMenu');
+            menu.classList.toggle('active');
+        }
+        
+        function toggleColumn(field, visible) {
+            gridColumnApi.setColumnVisible(field, visible);
+        }
+        
+        function onSearchChange() {
+            const value = document.getElementById('searchBox').value;
+            gridApi.setGridOption('quickFilterText', value);
+        }
+        
+        function filterByStatus(status) {
+            if (status === '') {
+                gridApi.setFilterModel(null);
+            } else {
+                gridApi.setFilterModel({
+                    status: {
+                        type: 'equals',
+                        filter: status
+                    }
+                });
+            }
+        }
+        
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+        
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+        
+        async function uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // 로딩 오버레이 표시
+            showLoading();
+            closeUploadModal();
+            
+            try {
+                updateLoadingStatus('서버로 파일 전송 중...', 20);
+                
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                updateLoadingStatus('데이터 처리 중...', 60);
+                
+                const result = await response.json();
+                
+                updateLoadingStatus('업로드 완료!', 100);
+                
+                // 잠시 대기 후 로딩 닫기
+                setTimeout(() => {
+                    hideLoading();
+                    
+                    if (response.ok) {
+                        const totalProcessed = result.inserted + result.updated;
+                        const errorCount = result.errors ? result.errors.length : 0;
+                        
+                        let message = `✅ 업로드 완료!\n\n`;
+                        message += `📊 처리 결과:\n`;
+                        message += `   • 신규 등록: ${result.inserted}건\n`;
+                        message += `   • 업데이트: ${result.updated}건\n`;
+                        message += `   • 총 처리: ${totalProcessed}건\n`;
+                        
+                        if (errorCount > 0) {
+                            message += `   • 오류: ${errorCount}건\n\n`;
+                            message += `⚠️ 일부 행에서 오류가 발생했습니다.\n`;
+                        }
+                        
+                        message += `\n💡 잘못 업로드한 경우 '업로드 취소' 버튼을 누르세요.`;
+                        message += `\n\n📥 고유번호가 포함된 엑셀 파일이 자동으로 다운로드됩니다.`;
+                        
+                        alert(message);
+                        loadData();
+                        
+                        // 마지막 업로드 ID 저장
+                        localStorage.setItem('last_upload_id', result.upload_id);
+                        
+                        // 고유번호가 포함된 엑셀 파일 자동 다운로드
+                        if (result.output_file) {
+                            window.location.href = `${API_BASE}/download/${result.output_file}`;
+                        }
+                    } else {
+                        alert(`❌ 업로드 실패: ${result.error}`);
+                    }
+                }, 500);
+                
+            } catch (error) {
+                hideLoading();
+                alert(`❌ 업로드 오류: ${error.message}`);
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+            updateLoadingStatus('파일 읽는 중...', 0);
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+        
+        function updateLoadingStatus(text, progress) {
+            document.getElementById('uploadStatus').textContent = text;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        function showRollbackModal() {
+            document.getElementById('rollbackModal').classList.add('active');
+            loadUploadHistory();
+        }
+        
+        function closeRollbackModal() {
+            document.getElementById('rollbackModal').classList.remove('active');
+        }
+        
+        async function loadUploadHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/upload/history`);
+                const history = await response.json();
+                
+                const list = document.getElementById('uploadHistoryList');
+                list.innerHTML = '';
+                
+                if (history.length === 0) {
+                    list.innerHTML = '<p style="text-align: center; color: #999;">업로드 이력이 없습니다.</p>';
+                    return;
+                }
+                
+                history.forEach(h => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 4px; background: #f8f9fa;';
+                    item.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${h.filename}</strong>
+                                <br>
+                                <small>${h.upload_date} | 신규: ${h.rows_inserted}건, 업데이트: ${h.rows_updated}건</small>
+                            </div>
+                            <button class="btn" style="background: #e74c3c; color: white; font-size: 12px;" 
+                                    onclick="confirmRollback(${h.id}, '${h.filename}')">
+                                삭제
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                console.error('이력 로드 실패:', error);
+            }
+        }
+        
+        async function confirmRollback(uploadId, filename) {
+            if (!confirm(`정말로 "${filename}" 업로드를 취소하시겠습니까?\n\n해당 시간 이후의 모든 데이터가 삭제됩니다!`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload/${uploadId}/rollback`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`✅ 취소 완료!\n삭제된 주문: ${result.deleted}건`);
+                    closeRollbackModal();
+                    loadData();
+                } else {
+                    alert(`❌ 취소 실패: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ 오류: ${error.message}`);
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                uploadFile({ target: { files } });
+            }
+        }
+        
+        function exportToExcel() {
+            // 원본 엑셀 형식으로 다운로드 (고유번호, 상품상태 포함)
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            window.location.href = `${API_BASE}/export_excel`;
+        }
+        
+        // 클릭 외부 영역 클릭 시 메뉴 닫기
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('columnMenu');
+            const btn = document.querySelector('.column-toggle-btn');
+            if (menu && !menu.contains(e.target) && e.target !== btn) {
+                menu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 관리 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .content-section {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        input, select, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background: #229954;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-입고 { background: #fff3cd; color: #856404; }
+        .status-미송 { background: #d1ecf1; color: #0c5460; }
+        .status-품절 { background: #f8d7da; color: #721c24; }
+        .status-교환 { background: #fff3e0; color: #f57c00; }
+        .status-환불 { background: #fce4ec; color: #c2185b; }
+        .status-택배비 { background: #e0e0e0; color: #424242; }
+        .status-입고대기 { background: #e8f5e9; color: #2e7d32; }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+        
+        .upload-area.dragover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .stat-card.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .stat-card.orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 주문 관리 시스템</h1>
+            <p>효율적인 주문 관리를 위한 통합 플랫폼</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">대시보드</button>
+            <button class="tab" onclick="switchTab('orders')">주문 관리</button>
+            <button class="tab" onclick="switchTab('upload')">엑셀 업로드</button>
+            <button class="tab" onclick="switchTab('settings')">설정</button>
+        </div>
+        
+        <!-- 대시보드 -->
+        <div id="dashboard" class="content-section active">
+            <h2>오늘의 통계</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">총 주문</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">입고</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-label">미송</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-label">품절</div>
+                    <div class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 주문 관리 -->
+        <div id="orders" class="content-section">
+            <div class="filters">
+                <div class="filter-group">
+                    <label>담당자</label>
+                    <select id="filterManager">
+                        <option value="">전체</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>상태</label>
+                    <select id="filterStatus">
+                        <option value="">전체</option>
+                        <option value="입고대기">입고대기</option>
+                        <option value="입고">입고</option>
+                        <option value="미송">미송</option>
+                        <option value="품절">품절</option>
+                        <option value="교환">교환</option>
+                        <option value="환불">환불</option>
+                        <option value="택배비">택배비</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>검색</label>
+                    <input type="text" id="searchInput" placeholder="주문자명, 고유번호">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button onclick="loadOrders()">조회</button>
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button class="btn-success" onclick="showNewOrderModal()">+ 새 주문</button>
+                </div>
+            </div>
+            
+            <table id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>고유번호</th>
+                        <th>담당자</th>
+                        <th>주문자</th>
+                        <th>상품</th>
+                        <th>수량</th>
+                        <th>상태</th>
+                        <th>주문일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px;">데이터를 불러오는 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 엑셀 업로드 -->
+        <div id="upload" class="content-section">
+            <h2>엑셀 파일 업로드</h2>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()" 
+                 ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <p style="font-size: 48px; margin-bottom: 10px;">📁</p>
+                <p style="font-size: 16px; color: #666;">클릭하거나 파일을 드래그하여 업로드</p>
+                <p style="font-size: 12px; color: #999; margin-top: 10px;">지원 형식: .xlsx, .xls</p>
+                <input type="file" id="fileInput" style="display: none;" accept=".xlsx,.xls" onchange="uploadFile(event)">
+            </div>
+            <div id="uploadResult" style="margin-top: 20px;"></div>
+        </div>
+        
+        <!-- 설정 -->
+        <div id="settings" class="content-section">
+            <h2>담당자 관리</h2>
+            <button class="btn-success" onclick="showNewManagerModal()">+ 담당자 추가</button>
+            <table id="managersTable" style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>코드</th>
+                        <th>이름</th>
+                        <th>이메일</th>
+                        <th>전화</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody id="managersBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 새 주문 모달 -->
+    <div id="newOrderModal" class="modal">
+        <div class="modal-content">
+            <h2>새 주문 등록</h2>
+            <form id="newOrderForm">
+                <div class="form-group">
+                    <label>담당자 코드 *</label>
+                    <input type="text" id="newManagerCode" required>
+                </div>
+                <div class="form-group">
+                    <label>주문자명 *</label>
+                    <input type="text" id="newBuyerName" required>
+                </div>
+                <div class="form-group">
+                    <label>주문일 *</label>
+                    <input type="date" id="newOrderDate" required>
+                </div>
+                <div class="form-group">
+                    <label>상품명 *</label>
+                    <input type="text" id="newProductName" required>
+                </div>
+                <div class="form-group">
+                    <label>수량</label>
+                    <input type="number" id="newQuantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>상태</label>
+                    <select id="newStatus">
+                        <option value="입고대기">입고대기</option>
+                        <option value="입고">입고</option>
+                        <option value="미송">미송</option>
+                        <option value="품절">품절</option>
+                        <option value="교환">교환</option>
+                        <option value="환불">환불</option>
+                        <option value="택배비">택배비</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeModal('newOrderModal')">취소</button>
+                    <button type="submit" class="btn-success">등록</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        function switchTab(tabName) {
+            // 탭 활성화
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 컨텐츠 표시
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            
+            // 데이터 로드
+            if (tabName === 'dashboard') loadDashboard();
+            if (tabName === 'orders') loadOrders();
+            if (tabName === 'settings') loadManagers();
+        }
+        
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/stats/daily`);
+                const data = await response.json();
+                // 통계 업데이트 로직
+            } catch (error) {
+                console.error('통계 로드 실패:', error);
+            }
+        }
+        
+        async function loadOrders() {
+            const manager = document.getElementById('filterManager').value;
+            const status = document.getElementById('filterStatus').value;
+            const search = document.getElementById('searchInput').value;
+            
+            try {
+                let url = `${API_BASE}/orders?`;
+                if (manager) url += `manager=${manager}&`;
+                if (status) url += `status=${status}&`;
+                if (search) url += `search=${search}&`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('ordersBody');
+                tbody.innerHTML = '';
+                
+                if (data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">주문이 없습니다</td></tr>';
+                    return;
+                }
+                
+                data.items.forEach(order => {
+                    const row = `
+                        <tr>
+                            <td>${order.order_no}</td>
+                            <td>${order.manager.name}</td>
+                            <td>${order.buyer.name}</td>
+                            <td>-</td>
+                            <td>${order.total_quantity}</td>
+                            <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+                            <td>${order.order_date}</td>
+                            <td>
+                                <button onclick="viewOrder(${order.id})">상세</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('주문 로드 실패:', error);
+            }
+        }
+        
+        async function uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            document.getElementById('uploadResult').innerHTML = '<p>업로드 중...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('uploadResult').innerHTML = `
+                        <p style="color: green;">✓ 업로드 성공!</p>
+                        <p>처리: ${data.result.processed}건, 신규: ${data.result.inserted}건, 업데이트: ${data.result.updated}건</p>
+                    `;
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                document.getElementById('uploadResult').innerHTML = `
+                    <p style="color: red;">✗ 업로드 실패: ${error.message}</p>
+                `;
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                uploadFile({ target: { files } });
+            }
+        }
+        
+        function showNewOrderModal() {
+            document.getElementById('newOrderModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        async function loadManagers() {
+            try {
+                const response = await fetch(`${API_BASE}/managers`);
+                const managers = await response.json();
+                
+                // 필터 드롭다운 업데이트
+                const filterSelect = document.getElementById('filterManager');
+                filterSelect.innerHTML = '<option value="">전체</option>';
+                managers.forEach(m => {
+                    filterSelect.innerHTML += `<option value="${m.code}">${m.name}</option>`;
+                });
+                
+                // 테이블 업데이트
+                const tbody = document.getElementById('managersBody');
+                tbody.innerHTML = '';
+                managers.forEach(m => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${m.code}</td>
+                            <td>${m.name}</td>
+                            <td>${m.email || '-'}</td>
+                            <td>${m.phone || '-'}</td>
+                            <td>${m.is_active ? '활성' : '비활성'}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('담당자 로드 실패:', error);
+            }
+        }
+        
+        // 초기 로드
+        window.onload = () => {
+            loadDashboard();
+            loadManagers();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
