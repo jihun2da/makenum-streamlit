@@ -28,8 +28,6 @@ const COLUMN_LABELS: Record<string, string> = {
   change_log:"변경내용",
 };
 
-const ADMIN_EMAIL = "jihun2da@naver.com";
-
 export default function OrdersPage() {
   const router = useRouter();
   const [rows,        setRows]        = useState<OrderRow[]>([]);
@@ -43,13 +41,11 @@ export default function OrdersPage() {
   const [visibleCols, setVisibleCols] = useState<string[]>(ALL_COLUMN_KEYS);
   const [showColMenu, setShowColMenu] = useState(false);
   const [tab,         setTab]         = useState<"orders"|"upload"|"history"|"activity">("orders");
-  const [userEmail,   setUserEmail]   = useState<string | null>(null);
 
   // ── 인증 확인 ──
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) router.replace("/login");
-      else setUserEmail(session.user.email ?? null);
     });
   }, [router]);
 
@@ -112,15 +108,6 @@ export default function OrdersPage() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
         <h1 className="text-lg font-bold text-gray-800">주문 관리 시스템</h1>
         <div className="flex items-center gap-3">
-          {/* 관리자 대시보드 버튼 (마스터 관리자만) */}
-          {userEmail === ADMIN_EMAIL && (
-            <button
-              onClick={() => router.push("/admin")}
-              className="px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg font-medium hover:bg-gray-700 transition flex items-center gap-1"
-            >
-              <span className="text-yellow-300 text-xs">★</span> 관리자
-            </button>
-          )}
           {/* 엑셀 다운로드 */}
           <a
             href={getExportUrl({
