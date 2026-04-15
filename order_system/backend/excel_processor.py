@@ -149,13 +149,14 @@ def _val(ws, row, col):
 # 메인 처리 함수
 # ──────────────────────────────────────
 def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
-    # 업로드 이력 생성
-    hist = supabase.table("upload_history").insert({
-        "filename": filename, "status": "처리중"
-    }).execute()
-    upload_id = hist.data[0]["id"]
-
+    upload_id = None
     try:
+        # 업로드 이력 생성
+        hist = supabase.table("upload_history").insert({
+            "filename": filename, "status": "처리중"
+        }).execute()
+        upload_id = hist.data[0]["id"]
+
         wb = load_workbook(io.BytesIO(file_contents))
         ws = wb.active
         col = _get_col_map(ws)
@@ -453,9 +454,16 @@ def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
         }
 
     except Exception as e:
-        supabase.table("upload_history").update({
-            "status": "실패", "error_message": str(e)
-        }).eq("id", upload_id).execute()
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[PROCESS ERROR] {e}\n{tb}")
+        if upload_id:
+            try:
+                supabase.table("upload_history").update({
+                    "status": "실패", "error_message": str(e)
+                }).eq("id", upload_id).execute()
+            except Exception:
+                pass
         return {"success": False, "error": str(e), "upload_id": upload_id}
 
 
