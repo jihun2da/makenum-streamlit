@@ -154,7 +154,7 @@ def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
         # 업로드 이력 생성
         hist = supabase.table("upload_history").insert({
             "filename": filename, "status": "처리중"
-        }).execute()
+        }).select().execute()
         upload_id = hist.data[0]["id"]
 
         wb = load_workbook(io.BytesIO(file_contents))
@@ -322,7 +322,7 @@ def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
                             "item_code":       row["item_code"] or None,
                             "status_history":  row["status"],
                             "change_log":      f"[{now_str}] 기존 주문에 상품 추가",
-                        }).execute()
+                        }).select("id").execute()
 
                         supabase.table("activity_log").insert({
                             "event_type":        "new_upload",
@@ -389,7 +389,9 @@ def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
                             "order_date":        row["order_date"],
                             "status":            row["status"],
                             "upload_history_id": upload_id,
-                        }).execute()
+                        }).select("id").execute()
+                        if not new_order.data:
+                            raise Exception(f"orders INSERT 실패 (빈 응답) — order_no={order_no}")
                         order_id = new_order.data[0]["id"]
 
                     # 아이템 생성 (같은 주문에 동일 상품명이 이미 있으면 skip)
@@ -418,7 +420,7 @@ def process_excel_file(file_contents: bytes, filename: str, supabase) -> dict:
                             "item_code":       row["item_code"] or None,
                             "status_history":  row["status"],
                             "change_log":      f"[{now_str}] 신규 등록 | 번호: {order_no}",
-                        }).execute()
+                        }).select("id").execute()
 
                         supabase.table("activity_log").insert({
                             "event_type":        "new_upload",
