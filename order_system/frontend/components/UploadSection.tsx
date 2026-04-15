@@ -1,34 +1,86 @@
 "use client";
-import { useState, useRef } from "react";
-import { uploadExcel } from "@/lib/api";
+import { useState, useRef, useEffect } from "react";
+import { uploadExcel, getUploadStatus } from "@/lib/api";
 
 interface Props { onSuccess: () => void; }
 
 export default function UploadSection({ onSuccess }: Props) {
-  const [file,    setFile]    = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [result,  setResult]  = useState<{ success: boolean; msg: string } | null>(null);
+  const [file,     setFile]     = useState<File | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [result,   setResult]   = useState<{ success: boolean; msg: string } | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
+  const stopPolling = () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  };
+
+  const startPolling = (uploadId: string) => {
+    let attempts = 0;
+    const MAX = 120;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const status = await getUploadStatus(uploadId);
+        if (!status.processing) {
+          stopPolling();
+          setLoading(false);
+          setProgress(null);
+          setFile(null);
+          if (inputRef.current) inputRef.current.value = "";
+          if (status.success) {
+            setResult({
+              success: true,
+              msg: `완료 — 신규 ${status.inserted}건, 수정 ${status.updated}건 (총 ${status.rows}행)`,
+            });
+            onSuccess();
+          } else {
+            setResult({ success: false, msg: status.error || "처리 실패" });
+          }
+        } else {
+          setProgress(`백그라운드 처리 중... (${attempts * 5}초 경과)`);
+        }
+      } catch {
+        if (attempts >= MAX) {
+          stopPolling();
+          setLoading(false);
+          setProgress(null);
+          setResult({ success: false, msg: "처리 시간 초과. 업로드 이력을 확인해 주세요." });
+        }
+      }
+    }, 5000);
+  };
 
   const handleUpload = async () => {
     if (!file) return;
     setLoading(true);
     setResult(null);
+    setProgress(null);
     try {
       const res = await uploadExcel(file);
-      setResult({
-        success: true,
-        msg: `완료 — 신규 ${res.inserted}건, 수정 ${res.updated}건${
-          res.errors?.length ? ` (오류 ${res.errors.length}건)` : ""
-        }`,
-      });
-      setFile(null);
-      if (inputRef.current) inputRef.current.value = "";
-      onSuccess();
+      if (res.processing) {
+        setProgress("파일 수신 완료. 백그라운드에서 처리 중...");
+        startPolling(res.upload_id);
+      } else {
+        setFile(null);
+        if (inputRef.current) inputRef.current.value = "";
+        setLoading(false);
+        setResult({
+          success: true,
+          msg: `완료 — 신규 ${res.inserted}건, 수정 ${res.updated}건${
+            res.errors?.length ? ` (오류 ${res.errors.length}건)` : ""
+          }`,
+        });
+        onSuccess();
+      }
     } catch (e: unknown) {
-      setResult({ success: false, msg: String(e instanceof Error ? e.message : e) });
-    } finally {
       setLoading(false);
+      setResult({ success: false, msg: String(e instanceof Error ? e.message : e) });
     }
   };
 
@@ -51,6 +103,12 @@ export default function UploadSection({ onSuccess }: Props) {
           {loading ? "처리 중..." : "업로드 실행"}
         </button>
       </div>
+
+      {progress && (
+        <div className="mt-3 px-3 py-2 rounded-lg text-sm bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-2">
+          <span className="inline-block">⏳</span> {progress}
+        </div>
+      )}
 
       {result && (
         <div className={`mt-3 px-3 py-2 rounded-lg text-sm ${

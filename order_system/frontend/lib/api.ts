@@ -11,6 +11,15 @@ export async function uploadExcel(file: File) {
   return res.json();
 }
 
+export async function getUploadStatus(uploadId: string) {
+  const res = await fetch(`${API_URL}/api/upload/status/${uploadId}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "상태 조회 실패");
+  }
+  return res.json();
+}
+
 export async function rollbackUpload(uploadId: string) {
   const res = await fetch(`${API_URL}/api/rollback/${uploadId}`, { method: "POST" });
   if (!res.ok) {
